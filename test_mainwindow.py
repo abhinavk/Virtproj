@@ -22,6 +22,9 @@ from ui_mainwindow import Ui_MainWindow
 from PyQt5.QtWidgets import QVBoxLayout
 
 
+
+
+
 class MyMplCanvas(FigureCanvas):
     def __init__(self, parent=None, width=7, height=2, dpi=100):
         fig = Figure(figsize=(width, height), dpi=dpi)
@@ -35,6 +38,11 @@ class MyMplCanvas(FigureCanvas):
 
     def compute_initial_figure(self):
         pass
+
+
+
+
+
 
 class cpu_usage(MyMplCanvas):
     def __init__(self, *args, **kwargs):
