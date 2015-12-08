@@ -49,14 +49,43 @@
         </item>
         <item>
          <widget class="QTabWidget" name="tabWidget">
-          <widget class="QWidget" name="tab">
+          <property name="tabPosition">
+           <enum>QTabWidget::North</enum>
+          </property>
+          <property name="currentIndex">
+           <number>5</number>
+          </property>
+          <property name="tabsClosable">
+           <bool>false</bool>
+          </property>
+          <widget class="QWidget" name="tab_info">
            <attribute name="title">
-            <string>Tab 1</string>
+            <string>Info</string>
            </attribute>
           </widget>
-          <widget class="QWidget" name="tab_2">
+          <widget class="QWidget" name="tab_cpu">
            <attribute name="title">
-            <string>Tab 2</string>
+            <string>CPU</string>
+           </attribute>
+          </widget>
+          <widget class="QWidget" name="tab_mips">
+           <attribute name="title">
+            <string>MIPS</string>
+           </attribute>
+          </widget>
+          <widget class="QWidget" name="tab_mem">
+           <attribute name="title">
+            <string>Memory</string>
+           </attribute>
+          </widget>
+          <widget class="QWidget" name="tab_disk">
+           <attribute name="title">
+            <string>Disk</string>
+           </attribute>
+          </widget>
+          <widget class="QWidget" name="tab_temp">
+           <attribute name="title">
+            <string>Temp</string>
            </attribute>
           </widget>
          </widget>
@@ -66,20 +95,6 @@
           <property name="text">
            <string>TextLabel</string>
           </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QTabWidget" name="tabWidget_2">
-          <widget class="QWidget" name="tab_3">
-           <attribute name="title">
-            <string>Tab 1</string>
-           </attribute>
-          </widget>
-          <widget class="QWidget" name="tab_4">
-           <attribute name="title">
-            <string>Tab 2</string>
-           </attribute>
-          </widget>
          </widget>
         </item>
        </layout>
