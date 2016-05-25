@@ -94,14 +94,14 @@ class Ui_MainWindow(object):
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "Project Virt"))
-        self.label.setText(_translate("MainWindow", "TextLabel"))
+        self.label.setText(_translate("MainWindow", "Host 1"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_info), _translate("MainWindow", "Info"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_cpu), _translate("MainWindow", "CPU"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_mips), _translate("MainWindow", "MIPS"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_mem), _translate("MainWindow", "Memory"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_disk), _translate("MainWindow", "Disk"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_temp), _translate("MainWindow", "Temp"))
-        self.label_2.setText(_translate("MainWindow", "TextLabel"))
+        self.label_2.setText(_translate("MainWindow", ""))
         self.menuFile.setTitle(_translate("MainWindow", "File"))
         self.menuHelp.setTitle(_translate("MainWindow", "Help"))
         self.actionExit.setText(_translate("MainWindow", "Exit"))
