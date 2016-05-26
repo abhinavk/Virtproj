@@ -5,6 +5,7 @@ import libvirt
 import sqlite3
 import subprocess
 import time
+from multiprocessing import Process
 
 def get_temperature():
     res = subprocess.check_output('sensors',shell=True)
@@ -14,21 +15,23 @@ def get_temperature():
     cpu2 = diva[2].split(' ')[4][1:5]
     return (float(cpu1)+float(cpu2))/2
 
-def writeData():
-    global c, d
+def writeData(d):
+    conn = sqlite3.connect('dataDB.db')
+    c = conn.cursor()
     temparature = round(d.temp, 2)
     cpu = float(sum(d.cpu))/len(d.cpu)
     mem = float(sum(d.mem))/len(d.mem)
     power = (1.5 * cpu)/60
     print(str(temparature) + "  " + str(cpu) + "  " + str(mem))
     c.execute("INSERT INTO hostData VALUES (?,?,?,?);",(temparature, cpu, mem, power))
-    
+
     # c.execute("INSERT INTO domDataVM1 VALUES (?,?,?,?);",(cpu, mem, netRead, netWrite))
     # c.execute("INSERT INTO domDataVM2 VALUES (?,?,?,?);",(cpu, mem, netRead, netWrite))
     # c.execute("INSERT INTO domDataVM3 VALUES (?,?,?,?);",(cpu, mem, netRead, netWrite))
     # c.execute("INSERT INTO domDataVM4 VALUES (?,?,?,?);",(cpu, mem, netRead, netWrite))
 
     conn.commit()
+    conn.close()
 
 def readData():
     global d
@@ -48,14 +51,14 @@ def get_per_sec_info():
     # vm = []
     local_cpu = []
     local_mem = []
-    
+
     for i in range(4):
         cdo = virt_connection.lookupByID(i+2)
         local_cpu.append(get_cpu(i+2))
         local_mem.append(get_mem())
 
     cpu_ind,mem_ind = local_cpu,local_mem
-    
+
     cpu = (cpu_ind[0] + cpu_ind[1] + cpu_ind[2] + cpu_ind[3])/4
     mem = mem_ind[0] + mem_ind[1] + mem_ind[2] + mem_ind[3]
     return cpu, mem
@@ -83,7 +86,7 @@ def get_cpu(i):
     info = cdo.info()
     guestcpus = info[3]
     nowcput = info[4]
-    
+
     elapsedTime[i-2] = now - oldStats[i-2]['timestamp']
     utilisation = (nowcput - oldStats[i-2]['usedTime'])/elapsedTime[i-2]
     utilisation = utilisation/guestcpus
@@ -108,8 +111,8 @@ if __name__ == "__main__":
         sys.exit(0)
     all_domains = virt_connection.listAllDomains(0) # Get all domains
     cdo = None
-    conn = sqlite3.connect('dataDB.db')
-    c = conn.cursor()
+    #conn = sqlite3.connect('dataDB.db')
+    #c = conn.cursor()
     # c.execute('''CREATE TABLE hostData(temp REAL, cpu REAL, mem REAL, power REAL)''')
 
     # c.execute('''CREATE TABLE domDataVM1(cpu REAL, mem REAL, netRead REAL, netWrite REAL)''')
@@ -120,5 +123,6 @@ if __name__ == "__main__":
     d = HostData()
     while True:
         readData()
-        writeData()
-    conn.close()
+        write_process = Process(target=writeData, args=(d,))
+        write_process.start()
+    #conn.close()
