@@ -2,7 +2,8 @@
 
 import fpdf
 import argparse
-import libvirt
+# import libvirt
+import sqlite3
 import time
 import subprocess
 from xml.dom import minidom
@@ -17,12 +18,54 @@ def get_filename(error=False):
     else:
         return current_date + '.pdf'
 
+def none2z(string_from_db):
+    if string_from_db is None:
+        return str(0)
+    else:
+        return str(format(string_from_db, '.02f'))
+
 def write_host_page(p):
     p.add_page()
-
     p.set_font('Arial','B', 18)
     p.cell(0, STD_HEIGHT, 'Host Info', 0, 1)
+    write_host_info(p)
 
+    p.add_page()
+    p.set_font('Arial','B', 18)
+    p.cell(0, STD_HEIGHT, 'Host Resource Usage Report', 0, 1)
+    write_host_usage(p)
+
+def write_host_usage(p):
+    # Set a smaller font for resource usage page
+    p.set_font('Arial', 'B', 14)
+    p.ln(5)
+
+    # Headers of the table
+    p.cell(40, STD_HEIGHT, 'Timeframe', 1, 0, 'C')
+    p.cell(30, STD_HEIGHT, 'CPU', 1, 0, 'C')
+    p.cell(30, STD_HEIGHT, 'Memory', 1, 0, 'C')
+    p.cell(30, STD_HEIGHT, 'Temp', 1, 0, 'C')
+    p.cell(30, STD_HEIGHT, 'Power', 1, 0, 'C')
+    p.cell(30, STD_HEIGHT, 'Network', 1, 1, 'C')
+
+    p.set_font('Arial', '', 14)
+
+    for i in range(24): # for 24 hours of the day
+        hour = format(i, '02d')
+        p.cell(40, STD_HEIGHT, hour + ':00 - ' + hour + ':59', 1, 0, 'C')
+
+        query = 'SELECT AVG(cpu),AVG(mem),AVG(temp),SUM(power),AVG(netRead + netWrite) FROM hostData WHERE dated is ? AND timed BETWEEN \"'
+        c.execute(query + hour + ':00:00\" AND \"' + hour + ':59:59\"', (today,))
+        hourdata = c.fetchone()
+
+        p.cell(30, STD_HEIGHT, none2z(hourdata[0]), 1, 0, 'C')
+        p.cell(30, STD_HEIGHT, none2z(hourdata[1]), 1, 0, 'C')
+        p.cell(30, STD_HEIGHT, none2z(hourdata[2]), 1, 0, 'C')
+        p.cell(30, STD_HEIGHT, none2z(hourdata[3]), 1, 0, 'C')
+        p.cell(30, STD_HEIGHT, none2z(hourdata[4]), 1, 1, 'C')
+
+
+def write_host_info(p):
     # Set font for the Host Information table
     p.set_font('Arial', '', 14)
 
@@ -108,15 +151,19 @@ def write_domain_page(p,domain):
     p.cell(COL_WIDTH, STD_HEIGHT, 'Autostarts on host boot: ', 1, 0, 'R')
     p.cell(0, STD_HEIGHT, 'Yes' if domain.autostart else 'No', 1, 1)
 
-def gen_weekly_report():
+
+def gen_daily_report():
     pdf = fpdf.FPDF()
 
     # Title Page
     pdf.add_page()
 
     # Print heading
+    pdf.ln(50)
     pdf.set_font('Arial','B',40)
-    pdf.cell(0, 30, 'Generated Weekly report', 0, 1, 'C')
+    pdf.cell(0, 30, 'Weekly report', 0, 1, 'C')
+    pdf.set_font('Arial', '', 20)
+    pdf.cell(0, 30, 'Generated at ' + time.strftime("%d-%m-%Y %H:%M:%S"), 0, 1, 'C')
 
     write_host_page(pdf)
 
@@ -144,4 +191,11 @@ if __name__ == '__main__':
         gen_error_pdf()
         exit(1)
 
-    gen_weekly_report()
+    sqc = sqlite3.connect('../BackgroundSvc/dataDB.db')
+    c = sqc.cursor()
+
+    today = time.strftime('%Y-%m-%d')
+    print(today)
+    gen_daily_report()
+
+    sqc.close()
