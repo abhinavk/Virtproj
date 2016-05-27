@@ -5,8 +5,113 @@ import libvirt
 import sqlite3
 import subprocess
 import time
+import datetime
 from multiprocessing import Process
+from xml.dom import minidom
 
+
+
+# data-type to store values of all parameters of all vm's and host for 60 seconds
+class RawData:
+    def __init__(self):
+        self.datestamp = None
+        self.timestamp = None
+
+        self.hostTemp = 0
+        self.hostCPU = [ 0 for i in range(60) ]
+        self.hostMEM = [ 0 for i in range(60) ]
+        self.hostNETREAD = [ 0 for i in range(60) ]
+        self.hostNETWRITE = [ 0 for i in range(60) ]
+
+        self.vmCPU = [[] for i in range(4)]
+        self.vmMEM = [[] for i in range(4)]
+        self.vmNETREAD = [[] for i in range(4)]
+        self.vmNETWRITE = [[] for i in range(4)]
+
+    def update(self):
+        for i in range(4):
+            self.vmCPU[i] = []
+            self.vmMEM[i] = []
+            self.vmNETREAD[i] = []
+            self.vmNETWRITE[i] = []
+        self.datestamp = time.strftime('%Y-%m-%d')
+        self.timestamp = time.strftime('%H:%M:%S')
+
+
+
+# write the average of the stored 60 seconds values into database
+def writeData(rdObj):
+    vmcpu = []
+    vmmem = []
+    vmnetRead = []
+    vmnetWrite = []
+
+    conn = sqlite3.connect('RawData.db')
+    c = conn.cursor()
+
+    # for i in range(60):
+    #     rdObj.hostCPU[i] = (rdObj.vmCPU[0][i] + rdObj.vmCPU[1][i] + rdObj.vmCPU[2][i] + rdObj.vmCPU[3][i])/4
+    #     rdObj.hostMEM[i] = rdObj.vmMEM[0][i] + rdObj.vmMEM[1][i] + rdObj.vmMEM[2][i] + rdObj.vmMEM[3][i]
+    #     rdObj.hostNETREAD[i] = rdObj.vmNETREAD[0][i] + rdObj.vmNETREAD[1][i] + rdObj.vmNETREAD[2][i] + rdObj.vmNETREAD[3][i]
+    #     rdObj.hostNETWRITE[i] = rdObj.vmNETWRITE[0][i] + rdObj.vmNETWRITE[1][i] + rdObj.vmNETWRITE[2][i] + rdObj.vmNETWRITE[3][i]
+    #
+    # temp = round(rdObj.hostTemp, 2)
+    # cpu = float(sum(rdObj.hostCPU))/len(rdObj.hostCPU)
+    # mem = float(sum(rdObj.hostMEM))/len(rdObj.hostMEM)
+    # power = (1.5 * cpu)/60
+
+    for i in range(4):
+        vmcpu.append(float(sum(rdObj.vmCPU[i]))/len(rdObj.vmCPU[i]))
+        vmmem.append(float(sum(rdObj.vmMEM[i]))/len(rdObj.vmMEM[i]))
+        vmnetRead.append(float(sum(rdObj.vmNETREAD[i]))/len(rdObj.vmNETREAD[i]))
+        vmnetWrite.append(float(sum(rdObj.vmNETWRITE[i]))/len(rdObj.vmNETWRITE[i]))
+
+    cpu = float(sum(vmcpu)/4)
+    temp = round(rdObj.hostTemp, 2)
+    mem = float(sum(vmmem))
+    power = (1.5*cpu)/60
+    netrd = float(sum(vmnetRead))
+    netwr = float(sum(vmnetWrite))
+
+
+
+    c.execute("INSERT INTO hostData VALUES (?,?,?,?,?,?,?,?);",(rdObj.datestamp, rdObj.timestamp, cpu, mem, power, temp, netrd, netwr))
+    c.execute("INSERT INTO domDataVM1 VALUES (?,?,?,?,?,?);",(rdObj.datestamp, rdObj.timestamp, vmcpu[0], vmmem[0], vmnetRead[0], vmnetWrite[0]))
+    c.execute("INSERT INTO domDataVM2 VALUES (?,?,?,?,?,?);",(rdObj.datestamp, rdObj.timestamp, vmcpu[1], vmmem[1], vmnetRead[1], vmnetWrite[1]))
+    c.execute("INSERT INTO domDataVM3 VALUES (?,?,?,?,?,?);",(rdObj.datestamp, rdObj.timestamp, vmcpu[2], vmmem[2], vmnetRead[2], vmnetWrite[2]))
+    c.execute("INSERT INTO domDataVM4 VALUES (?,?,?,?,?,?);",(rdObj.datestamp, rdObj.timestamp, vmcpu[3], vmmem[3], vmnetRead[3], vmnetWrite[3]))
+
+    print("write done!!")
+
+    conn.commit()
+    conn.close()
+    print("Write ended at " + datetime.datetime.now().strftime("%M:%S.%f"))
+
+
+
+# read data of the vm's and host from API's(libvirt and sensors)
+def readData():
+    global rdObj
+    rdObj.temp = get_temperature()
+    for i in range(60):
+        get_per_sec_info()
+
+
+
+# get details of all vm's cpu utilisation, memory usage, network read and write, PER SECOND!
+def get_per_sec_info():
+    global virt_connection, cdo, rdObj
+    for i in range(4):
+        cdo = virt_connection.lookupByID(i+2)
+        rdObj.vmCPU[i].append(get_cpu(i+2))
+        rdObj.vmMEM[i].append(get_mem())
+        temp = get_network_load(i+2)
+        rdObj.vmNETREAD[i].append(temp[0])
+        rdObj.vmNETWRITE[i].append(temp[1])
+
+
+
+# get temparature of the host using 'sensors' file
 def get_temperature():
     res = subprocess.check_output('sensors',shell=True)
     a = res.decode('utf-8')
@@ -15,60 +120,9 @@ def get_temperature():
     cpu2 = diva[2].split(' ')[4][1:5]
     return (float(cpu1)+float(cpu2))/2
 
-def writeData(d):
-    conn = sqlite3.connect('dataDB.db')
-    c = conn.cursor()
-    temparature = round(d.temp, 2)
-    cpu = float(sum(d.cpu))/len(d.cpu)
-    mem = float(sum(d.mem))/len(d.mem)
-    power = (1.5 * cpu)/60
-    print(str(temparature) + "  " + str(cpu) + "  " + str(mem))
-    c.execute("INSERT INTO hostData VALUES (?,?,?,?);",(temparature, cpu, mem, power))
-
-    # c.execute("INSERT INTO domDataVM1 VALUES (?,?,?,?);",(cpu, mem, netRead, netWrite))
-    # c.execute("INSERT INTO domDataVM2 VALUES (?,?,?,?);",(cpu, mem, netRead, netWrite))
-    # c.execute("INSERT INTO domDataVM3 VALUES (?,?,?,?);",(cpu, mem, netRead, netWrite))
-    # c.execute("INSERT INTO domDataVM4 VALUES (?,?,?,?);",(cpu, mem, netRead, netWrite))
-
-    conn.commit()
-    conn.close()
-
-def readData():
-    global d
-    d.temp = get_temperature()
-    for i in range(60):
-        d.cpu[i],d.mem[i] = get_per_sec_info()
-        time.sleep(1)
-
-class HostData:
-    def __init__(self):
-        self.temp = 0
-        self.cpu = [ 0 for i in range(60) ]
-        self.mem = [ 0 for i in range(60) ]
-
-def get_per_sec_info():
-    global virt_connection,cdo
-    # vm = []
-    local_cpu = []
-    local_mem = []
-
-    for i in range(4):
-        cdo = virt_connection.lookupByID(i+2)
-        local_cpu.append(get_cpu(i+2))
-        local_mem.append(get_mem())
-
-    cpu_ind,mem_ind = local_cpu,local_mem
-
-    cpu = (cpu_ind[0] + cpu_ind[1] + cpu_ind[2] + cpu_ind[3])/4
-    mem = mem_ind[0] + mem_ind[1] + mem_ind[2] + mem_ind[3]
-    return cpu, mem
 
 
-cpu_ind = []
-mem_ind = []
-netRead = [0, 0, 0, 0]
-netWrite = [0, 0, 0, 0]
-
+# get memory usage of a vm in the host
 def get_mem():
     global cdo
     stats = cdo.memoryStats()
@@ -80,6 +134,7 @@ def get_mem():
 
 
 
+# get cpu utilisaion of the vm in the host
 def get_cpu(i):
     global cdo
     now = int(round(time.time() * 1000))
@@ -93,8 +148,8 @@ def get_cpu(i):
     utilisation = utilisation/1000000
     oldStats[i-2]['timestamp'] = now
     oldStats[i-2]['usedTime'] = nowcput
-    print("cpu utilisation  ")
-    print(round(utilisation,2))
+    # print("cpu utilisation  ")
+    # print(round(utilisation,2))
     return utilisation*100
 
 oldStats = [{'timestamp' : 0, 'usedTime' : 0} for i in range(4)]
@@ -102,27 +157,50 @@ elapsedTime = [0 for i in range(4)]
 
 
 
+# get network read and write speed(in KBps)
+def get_network_load(i):
+    global cdo
+    rd  = 0
+    wr = 0
+    global prevnrd
+    global prevnwr
+    rxml = cdo.XMLDesc(0)
+    xml = minidom.parseString(rxml)
+    disks = xml.getElementsByTagName("interface")
+    sources = disks[0].childNodes
+    for source in sources:
+        if source.nodeName == "target":
+            devsrc = source.attributes["dev"].value
+    io = cdo.interfaceStats(devsrc)
+    if io:
+        currnrd = io[1]/1024
+        currnwr = io[3]/1024
+        rd = currnrd - prevnrd[i-2]
+        wr = currnwr - prevnwr[i-2]
+        prevnrd[i-2], prevnwr[i-2] = currnrd, currnwr
+        return rd,wr
+
+prevnrd = [ 0 for i in range(4) ]
+prevnwr = [ 0 for i in range(4) ]
+
+
 
 if __name__ == "__main__":
     virt_connection = libvirt.open("qemu:///system") # Connect Qemu
-    # all_domains = self.virt_connection.listAllDomains(0) # Get all domains
+
     if virt_connection is None:
         print("No Qemu instance running.", file=sys.stderr)
         sys.exit(0)
+
     all_domains = virt_connection.listAllDomains(0) # Get all domains
+
     cdo = None
-    #conn = sqlite3.connect('dataDB.db')
-    #c = conn.cursor()
-    # c.execute('''CREATE TABLE hostData(temp REAL, cpu REAL, mem REAL, power REAL)''')
 
-    # c.execute('''CREATE TABLE domDataVM1(cpu REAL, mem REAL, netRead REAL, netWrite REAL)''')
-    # c.execute('''CREATE TABLE domDataVM2(cpu REAL, mem REAL, netRead REAL, netWrite REAL)''')
-    # c.execute('''CREATE TABLE domDataVM3(cpu REAL, mem REAL, netRead REAL, netWrite REAL)''')
-    # c.execute('''CREATE TABLE domDataVM4(cpu REAL, mem REAL, netRead REAL, netWrite REAL)''')
-
-    d = HostData()
+    rdObj = RawData()
     while True:
+        rdObj.update() # to update the timestamp
+        print("Read started at " + datetime.datetime.now().strftime("%M:%S.%f"))
         readData()
-        write_process = Process(target=writeData, args=(d,))
+        print("Write started at " + datetime.datetime.now().strftime("%M:%S.%f"))
+        write_process = Process(target=writeData, args=(rdObj,))
         write_process.start()
-    #conn.close()
