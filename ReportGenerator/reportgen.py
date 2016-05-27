@@ -2,7 +2,7 @@
 
 import fpdf
 import argparse
-# import libvirt
+import libvirt
 import sqlite3
 import time
 import subprocess
@@ -101,13 +101,49 @@ def write_host_info(p):
     p.cell(COL_WIDTH, STD_HEIGHT, 'Connection encrypted', 1, 0, 'R')
     p.cell(0, STD_HEIGHT, 'Yes' if conn.isEncrypted() else 'No', 1, 1)
 
-def write_domain_page(p,domain):
+def write_domain_page(p,i,domain):
     p.add_page()
-
     host_info = conn.getInfo()
     p.set_font('Arial','B', 18)
     p.cell(0, STD_HEIGHT, 'Domain Info for ' + domain.name() , 0, 1)
+    write_domain_info(p,domain)
 
+    p.add_page()
+    p.set_font('Arial','B', 18)
+    p.cell(0, STD_HEIGHT, 'Domain Resource Usage Report', 0, 1)
+    write_domain_usage(p,i)
+
+def write_domain_usage(p,i):
+    # Set a smaller font for resource usage page
+    p.set_font('Arial', 'B', 14)
+    p.ln(5)
+
+    # Headers of the table
+    p.cell(50, STD_HEIGHT, 'Timeframe', 1, 0, 'C')
+    p.cell(30, STD_HEIGHT, 'CPU', 1, 0, 'C')
+    p.cell(30, STD_HEIGHT, 'Memory', 1, 0, 'C')
+    p.cell(30, STD_HEIGHT, 'Network In', 1, 0, 'C')
+    p.cell(30, STD_HEIGHT, 'Network Out', 1, 1, 'C')
+
+    p.set_font('Arial', '', 14)
+
+    vm = 'domDataVM' + str(i+1)
+
+    for j in range(24): # for 24 hours of the day
+        hour = format(j, '02d')
+        p.cell(50, STD_HEIGHT, hour + ':00 - ' + hour + ':59', 1, 0, 'C')
+
+        query = 'SELECT AVG(cpu),AVG(mem),AVG(netRead),AVG(netWrite) FROM ' + vm + ' WHERE dated is ? AND timed BETWEEN \"'
+        c.execute(query + hour + ':00:00\" AND \"' + hour + ':59:59\"', (today,))
+        hourdata = c.fetchone()
+
+        p.cell(30, STD_HEIGHT, none2z(hourdata[0]), 1, 0, 'C')
+        p.cell(30, STD_HEIGHT, none2z(hourdata[1]), 1, 0, 'C')
+        p.cell(30, STD_HEIGHT, none2z(hourdata[2]), 1, 0, 'C')
+        p.cell(30, STD_HEIGHT, none2z(hourdata[3]), 1, 1, 'C')
+
+
+def write_domain_info(p,domain):
     # Set font for the Host Information table
     p.set_font('Arial', '', 14)
 
@@ -168,8 +204,8 @@ def gen_daily_report():
     write_host_page(pdf)
 
     domains = conn.listAllDomains(0)
-    for domain in domains:
-        write_domain_page(pdf,domain)
+    for i,d in enumerate(domains):
+        write_domain_page(pdf,i,d)
 
     # Write the PDF file
     pdf.output(get_filename(),'F')
@@ -191,7 +227,7 @@ if __name__ == '__main__':
         gen_error_pdf()
         exit(1)
 
-    sqc = sqlite3.connect('../BackgroundSvc/dataDB.db')
+    sqc = sqlite3.connect('../BackgroundSvc/RawData.db')
     c = sqc.cursor()
 
     today = time.strftime('%Y-%m-%d')
