@@ -67,32 +67,33 @@ def writeData(rdObj):
         vmnetWrite.append(float(sum(rdObj.vmNETWRITE[i]))/len(rdObj.vmNETWRITE[i]))
 
     cpu = float(sum(vmcpu)/4)
-    temp = round(rdObj.hostTemp, 2)
+    # temp = rdObj.hostTemp
     mem = float(sum(vmmem))
-    power = (1.5*cpu)/60
+    power = float((1.500*cpu)/60)
+    # print(power)
     netrd = float(sum(vmnetRead))
     netwr = float(sum(vmnetWrite))
 
 
 
-    c.execute("INSERT INTO hostData VALUES (?,?,?,?,?,?,?,?);",(rdObj.datestamp, rdObj.timestamp, cpu, mem, power, temp, netrd, netwr))
+    c.execute("INSERT INTO hostData VALUES (?,?,?,?,?,?,?,?);",(rdObj.datestamp, rdObj.timestamp, cpu, mem, rdObj.hostTemp, power, netrd, netwr))
     c.execute("INSERT INTO domDataVM1 VALUES (?,?,?,?,?,?);",(rdObj.datestamp, rdObj.timestamp, vmcpu[0], vmmem[0], vmnetRead[0], vmnetWrite[0]))
     c.execute("INSERT INTO domDataVM2 VALUES (?,?,?,?,?,?);",(rdObj.datestamp, rdObj.timestamp, vmcpu[1], vmmem[1], vmnetRead[1], vmnetWrite[1]))
     c.execute("INSERT INTO domDataVM3 VALUES (?,?,?,?,?,?);",(rdObj.datestamp, rdObj.timestamp, vmcpu[2], vmmem[2], vmnetRead[2], vmnetWrite[2]))
     c.execute("INSERT INTO domDataVM4 VALUES (?,?,?,?,?,?);",(rdObj.datestamp, rdObj.timestamp, vmcpu[3], vmmem[3], vmnetRead[3], vmnetWrite[3]))
 
-    print("write done!!")
+    # print("write done!!")
 
     conn.commit()
     conn.close()
-    print("Write ended at " + datetime.datetime.now().strftime("%M:%S.%f"))
+    # print("Write ended at " + datetime.datetime.now().strftime("%M:%S.%f"))
 
 
 
 # read data of the vm's and host from API's(libvirt and sensors)
 def readData():
     global rdObj
-    rdObj.temp = get_temperature()
+    rdObj.hostTemp = get_temperature()
     for i in range(60):
         timebegin = time.time()
         get_per_sec_info()
@@ -201,8 +202,8 @@ if __name__ == "__main__":
     rdObj = RawData()
     while True:
         rdObj.update() # to update the timestamp
-        print("Read started at " + datetime.datetime.now().strftime("%M:%S.%f"))
+        # print("Read started at " + datetime.datetime.now().strftime("%M:%S.%f"))
         readData()
-        print("Write started at " + datetime.datetime.now().strftime("%M:%S.%f"))
+        # print("Write started at " + datetime.datetime.now().strftime("%M:%S.%f"))
         write_process = Process(target=writeData, args=(rdObj,))
         write_process.start()
