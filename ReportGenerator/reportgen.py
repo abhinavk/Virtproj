@@ -5,6 +5,7 @@ import argparse
 import libvirt
 import sqlite3
 import time
+import datetime as dt
 import subprocess
 from xml.dom import minidom
 
@@ -24,7 +25,7 @@ def none2z(string_from_db):
     else:
         return str(format(string_from_db, '.02f'))
 
-def write_host_page(p):
+def write_host_page(p,rd):
     p.add_page()
     p.set_font('Arial','B', 18)
     p.cell(0, STD_HEIGHT, 'Host Info', 0, 1)
@@ -33,9 +34,9 @@ def write_host_page(p):
     p.add_page()
     p.set_font('Arial','B', 18)
     p.cell(0, STD_HEIGHT, 'Host Resource Usage Report', 0, 1)
-    write_host_usage(p)
+    write_host_usage(p,rd)
 
-def write_host_usage(p):
+def write_host_usage(p,rd):
     # Set a smaller font for resource usage page
     p.set_font('Arial', 'B', 14)
     p.ln(5)
@@ -55,7 +56,7 @@ def write_host_usage(p):
         p.cell(40, STD_HEIGHT, hour + ':00 - ' + hour + ':59', 1, 0, 'C')
 
         query = 'SELECT AVG(cpu),AVG(mem),AVG(temp),SUM(power),AVG(netRead + netWrite) FROM hostData WHERE dated is ? AND timed BETWEEN \"'
-        c.execute(query + hour + ':00:00\" AND \"' + hour + ':59:59\"', (today,))
+        c.execute(query + hour + ':00:00\" AND \"' + hour + ':59:59\"', (rd,))
         hourdata = c.fetchone()
 
         p.cell(30, STD_HEIGHT, none2z(hourdata[0]), 1, 0, 'C')
@@ -101,7 +102,7 @@ def write_host_info(p):
     p.cell(COL_WIDTH, STD_HEIGHT, 'Connection encrypted', 1, 0, 'R')
     p.cell(0, STD_HEIGHT, 'Yes' if conn.isEncrypted() else 'No', 1, 1)
 
-def write_domain_page(p,i,domain):
+def write_domain_page(p,i,domain,rd):
     p.add_page()
     host_info = conn.getInfo()
     p.set_font('Arial','B', 18)
@@ -111,9 +112,9 @@ def write_domain_page(p,i,domain):
     p.add_page()
     p.set_font('Arial','B', 18)
     p.cell(0, STD_HEIGHT, 'Domain Resource Usage Report', 0, 1)
-    write_domain_usage(p,i)
+    write_domain_usage(p,i,rd)
 
-def write_domain_usage(p,i):
+def write_domain_usage(p,i,rd):
     # Set a smaller font for resource usage page
     p.set_font('Arial', 'B', 14)
     p.ln(5)
@@ -134,7 +135,7 @@ def write_domain_usage(p,i):
         p.cell(50, STD_HEIGHT, hour + ':00 - ' + hour + ':59', 1, 0, 'C')
 
         query = 'SELECT AVG(cpu),AVG(mem),AVG(netRead),AVG(netWrite) FROM ' + vm + ' WHERE dated is ? AND timed BETWEEN \"'
-        c.execute(query + hour + ':00:00\" AND \"' + hour + ':59:59\"', (today,))
+        c.execute(query + hour + ':00:00\" AND \"' + hour + ':59:59\"', (rd,))
         hourdata = c.fetchone()
 
         p.cell(30, STD_HEIGHT, none2z(hourdata[0]), 1, 0, 'C')
@@ -188,7 +189,17 @@ def write_domain_info(p,domain):
     p.cell(0, STD_HEIGHT, 'Yes' if domain.autostart else 'No', 1, 1)
 
 
-def gen_daily_report():
+def gen_error_pdf():
+    errorpdf = fpdf.FPDF()
+    errorpdf.add_page()
+    errorpdf.set_font('Arial','B',48)
+    errorpdf.cell(40, 40, 'Error connecting to Qemu. Terminating report generation.', 0, 0, 'C')
+    pdf.output(get_filename(error=True),'F')
+
+def gen_weekly_report(startdate,enddate):
+    print(startdate + ' to ' + enddate)
+
+def gen_daily_report(rdate):
     pdf = fpdf.FPDF()
 
     # Title Page
@@ -201,23 +212,25 @@ def gen_daily_report():
     pdf.set_font('Arial', '', 20)
     pdf.cell(0, 30, 'Generated at ' + time.strftime("%d-%m-%Y %H:%M:%S"), 0, 1, 'C')
 
-    write_host_page(pdf)
+    write_host_page(pdf,rdate)
 
     domains = conn.listAllDomains(0)
     for i,d in enumerate(domains):
-        write_domain_page(pdf,i,d)
+        write_domain_page(pdf,i,d,rdate)
 
     # Write the PDF file
     pdf.output(get_filename(),'F')
 
-def gen_error_pdf():
-    errorpdf = fpdf.FPDF()
-    errorpdf.add_page()
-    errorpdf.set_font('Arial','B',48)
-    errorpdf.cell(40, 40, 'Error connecting to Qemu. Terminating report generation.', 0, 0, 'C')
-    pdf.output(get_filename(error=True),'F')
-
 if __name__ == '__main__':
+    # Get today
+    today = time.strftime('%Y-%m-%d')
+    sevendaysago = (dt.date.today() - dt.timedelta(days=7)).strftime('%Y-%m-%d')
+
+    parser = argparse.ArgumentParser(description='Generate reports')
+    parser.add_argument('--daily', nargs='?')
+    parser.add_argument('--weekly', nargs=2)
+    argus = parser.parse_args()
+
     # Make connection to libvirt
     conn = libvirt.open("qemu:///system")
     host_info = conn.getInfo()
@@ -230,8 +243,9 @@ if __name__ == '__main__':
     sqc = sqlite3.connect('../BackgroundSvc/RawData.db')
     c = sqc.cursor()
 
-    today = time.strftime('%Y-%m-%d')
-    print(today)
-    gen_daily_report()
+    if argus.weekly:
+        gen_weekly_report(argus.weekly[0],argus.weekly[1])
+    if argus.daily:
+        gen_daily_report(argus.daily)
 
     sqc.close()
