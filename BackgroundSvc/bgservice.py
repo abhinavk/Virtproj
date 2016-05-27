@@ -94,7 +94,9 @@ def readData():
     global rdObj
     rdObj.temp = get_temperature()
     for i in range(60):
+        timebegin = time.time()
         get_per_sec_info()
+        time.sleep(1-(time.time()-timebegin))
 
 
 
