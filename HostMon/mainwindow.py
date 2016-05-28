@@ -3,6 +3,7 @@ import sys
 import subprocess
 import libvirt
 import math
+import os
 import matplotlib
 import sqlite3
 matplotlib.use("Qt5Agg")
@@ -12,6 +13,10 @@ from numpy import arange, random
 from PyQt5 import QtWidgets, QtCore
 from ui_mainwindow import Ui_MainWindow
 from PyQt5.QtWidgets import QVBoxLayout
+
+from daily import Ui_Dialog as DailyForm
+from weekly import Ui_Dialog as WeeklyForm
+
 
 class MyMplCanvas(FigureCanvas):
     def __init__(self, parent=None, width=7, height=2, dpi=100):
@@ -143,6 +148,36 @@ class ResourcePentaGraph(MyMplCanvas):
         self.axes.set_ylim(self.lims)
         self.draw()
 
+class DailyDialog(QtWidgets.QDialog):
+    def __init__(self, parent=None):
+        super(DailyDialog, self).__init__(parent)
+        self.ui = DailyForm()
+        self.ui.setupUi(self)
+        # use new style signals
+        self.ui.buttonBox.accepted.connect(self.accept)
+        self.ui.buttonBox.rejected.connect(self.reject)
+
+    def accept(self):
+        dated = self.ui.calendarWidget.selectedDate()
+        os.system("python3 ../ReportGenerator/reportgen.py --daily " + dated.toPyDate().strftime("%Y-%m-%d"))
+        super(DailyDialog, self).accept()
+
+class WeeklyDialog(QtWidgets.QDialog):
+    def __init__(self, parent=None):
+        super(WeeklyDialog, self).__init__(parent)
+        self.ui = WeeklyForm()
+        self.ui.setupUi(self)
+        # use new style signals
+        self.ui.buttonBox.accepted.connect(self.accept)
+        self.ui.buttonBox.rejected.connect(self.reject)
+
+    def accept(self):
+        dated = self.ui.calendarWidget.selectedDate()
+        dated2 = self.ui.calendarWidget_2.selectedDate()
+
+        os.system("python3 ../ReportGenerator/reportgen.py --weekly " + dated.toPyDate().strftime("%Y-%m-%d") + " " + dated2.toPyDate().strftime("%Y-%m-%d"))
+        super(WeeklyDialog, self).accept()  
+
 
 class DisplayGraphs(QtWidgets.QMainWindow, Ui_MainWindow):
     def __init__(self):
@@ -179,8 +214,22 @@ class DisplayGraphs(QtWidgets.QMainWindow, Ui_MainWindow):
         self.tab_temp.setLayout(vbox6)
         self.tab_power.setLayout(vbox7)
 
+        self.pushButton.setText("Generate Daily report")
+        self.pushButton_2.setText("Generate Weekly report")
+
+        self.pushButton.clicked.connect(self.dailybtn)
+        self.pushButton_2.clicked.connect(self.weeklybtn)
+
+    def dailybtn(self):
+        dialog = DailyDialog()
+        dialog.exec_()
+
+    def weeklybtn(self):
+        dialog = WeeklyDialog()
+        dialog.exec_()
+
     def get_power(self):
-        x = sqlite3.connect("./BackgroundSvc/RawData.db")
+        x = sqlite3.connect("../BackgroundSvc/RawData.db")
         xc = x.cursor()
         xc.execute("SELECT tmp.power from (SELECT (dated || ' ' || timed) as datetimed, power from hostData) as tmp where datetime(tmp.datetimed,'localtime') < datetime('now','localtime') and datetime(tmp.datetimed,'localtime') >= datetime('now','-2 hours','localtime') ORDER BY tmp.datetimed DESC LIMIT 60")
         power = xc.fetchall()

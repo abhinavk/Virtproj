@@ -36,7 +36,7 @@ class RawData:
             self.vmNETWRITE[i] = []
         self.datestamp = time.strftime('%Y-%m-%d')
         self.timestamp = time.strftime('%H:%M:%S')
-
+    
 
 
 # write the average of the stored 60 seconds values into database
@@ -54,7 +54,7 @@ def writeData(rdObj):
     #     rdObj.hostMEM[i] = rdObj.vmMEM[0][i] + rdObj.vmMEM[1][i] + rdObj.vmMEM[2][i] + rdObj.vmMEM[3][i]
     #     rdObj.hostNETREAD[i] = rdObj.vmNETREAD[0][i] + rdObj.vmNETREAD[1][i] + rdObj.vmNETREAD[2][i] + rdObj.vmNETREAD[3][i]
     #     rdObj.hostNETWRITE[i] = rdObj.vmNETWRITE[0][i] + rdObj.vmNETWRITE[1][i] + rdObj.vmNETWRITE[2][i] + rdObj.vmNETWRITE[3][i]
-    #
+    # 
     # temp = round(rdObj.hostTemp, 2)
     # cpu = float(sum(rdObj.hostCPU))/len(rdObj.hostCPU)
     # mem = float(sum(rdObj.hostMEM))/len(rdObj.hostMEM)
@@ -65,7 +65,7 @@ def writeData(rdObj):
         vmmem.append(float(sum(rdObj.vmMEM[i]))/len(rdObj.vmMEM[i]))
         vmnetRead.append(float(sum(rdObj.vmNETREAD[i]))/len(rdObj.vmNETREAD[i]))
         vmnetWrite.append(float(sum(rdObj.vmNETWRITE[i]))/len(rdObj.vmNETWRITE[i]))
-
+    
     cpu = float(sum(vmcpu)/4)
     # temp = rdObj.hostTemp
     mem = float(sum(vmmem))
@@ -75,7 +75,7 @@ def writeData(rdObj):
     netwr = float(sum(vmnetWrite))
 
 
-
+    
     c.execute("INSERT INTO hostData VALUES (?,?,?,?,?,?,?,?);",(rdObj.datestamp, rdObj.timestamp, cpu, mem, rdObj.hostTemp, power, netrd, netwr))
     c.execute("INSERT INTO domDataVM1 VALUES (?,?,?,?,?,?);",(rdObj.datestamp, rdObj.timestamp, vmcpu[0], vmmem[0], vmnetRead[0], vmnetWrite[0]))
     c.execute("INSERT INTO domDataVM2 VALUES (?,?,?,?,?,?);",(rdObj.datestamp, rdObj.timestamp, vmcpu[1], vmmem[1], vmnetRead[1], vmnetWrite[1]))
@@ -137,14 +137,14 @@ def get_mem():
 
 
 
-# get cpu utilisaion of the vm in the host
+# get cpu utilisaion of the vm in the host 
 def get_cpu(i):
     global cdo
     now = int(round(time.time() * 1000))
     info = cdo.info()
     guestcpus = info[3]
     nowcput = info[4]
-
+    
     elapsedTime[i-2] = now - oldStats[i-2]['timestamp']
     utilisation = (nowcput - oldStats[i-2]['usedTime'])/elapsedTime[i-2]
     utilisation = utilisation/guestcpus
@@ -173,7 +173,7 @@ def get_network_load(i):
     sources = disks[0].childNodes
     for source in sources:
         if source.nodeName == "target":
-            devsrc = source.attributes["dev"].value
+            devsrc = source.attributes["dev"].value      
     io = cdo.interfaceStats(devsrc)
     if io:
         currnrd = io[1]/1024
@@ -190,13 +190,9 @@ prevnwr = [ 0 for i in range(4) ]
 
 if __name__ == "__main__":
     virt_connection = libvirt.open("qemu:///system") # Connect Qemu
-
-    if virt_connection is None:
-        print("No Qemu instance running.", file=sys.stderr)
-        sys.exit(0)
-
     all_domains = virt_connection.listAllDomains(0) # Get all domains
-
+    print(all_domains)
+    
     cdo = None
 
     rdObj = RawData()

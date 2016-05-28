@@ -52,6 +52,8 @@ class ResourceGraph(MyMplCanvas):
         self.y.pop(0)
         self.y.append(self.func())
         self.axes.plot(self.x,self.y, 'r')
+        self.axes.set_xlabel('Time')
+        self.axes.set_ylabel('dino123')
         self.axes.set_autoscaley_on(False)
         self.axes.set_ylim(self.lims)
         self.draw()
@@ -81,44 +83,8 @@ class ResourceDoubleGraph(MyMplCanvas):
         self.z.pop(0)
         self.z.append(fdata[1])
         self.axes.plot(self.x, self.y, 'r', self.x, self.z, 'b')
-        self.axes.set_autoscaley_on(False)
-        self.axes.set_ylim(self.lims)
-        self.draw()
-
-
-class ResourcePentaGraph(MyMplCanvas):
-    """The widget which will be in each tab of each tabwidget"""
-    def __init__(self, funcdata, lims, *args, **kwargs):
-        MyMplCanvas.__init__(self, *args, **kwargs)
-
-        self.x = [60-i for i in range(60)]
-        self.y1 = [0 for i in range(60)]
-        self.y2 = [0 for i in range(60)]
-        self.y3 = [0 for i in range(60)]
-        self.y4 = [0 for i in range(60)]
-        self.y0 = [0 for i in range(60)]
-        self.lims = lims
-        self.func = funcdata
-
-        self.axes.invert_xaxis()
-
-        timer = QtCore.QTimer(self)
-        timer.timeout.connect(self.update_figure)
-        timer.start(1000)
-
-    def update_figure(self):
-        fdata = self.func()
-        self.y1.pop(0)
-        self.y1.append(fdata[1])
-        self.y2.pop(0)
-        self.y2.append(fdata[2])
-        self.y3.pop(0)
-        self.y3.append(fdata[3])
-        self.y4.pop(0)
-        self.y4.append(fdata[4])
-        self.y0.pop(0)
-        self.y0.append(fdata[0])
-        self.axes.plot(self.x, self.y1, 'r', self.x, self.y2, 'b', self.x, self.y3, 'y', self.x, self.y4, 'g', self.x, self.y0, 'k')
+        self.axes.set_xlabel('Time')
+        self.axes.set_ylabel('dino123')
         self.axes.set_autoscaley_on(False)
         self.axes.set_ylim(self.lims)
         self.draw()

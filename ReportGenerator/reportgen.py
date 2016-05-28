@@ -12,8 +12,11 @@ from xml.dom import minidom
 COL_WIDTH = 70 # Width in millimetres for Column Width in tables
 STD_HEIGHT = 10 # Standard height for cells
 
-def get_filename(error=False):
-    current_date = 'weekly-report-' + time.strftime('%Y-%m-%d')
+def get_filename(rd=0,error=False):
+    if isinstance(rd,list):
+        current_date = 'weekly-report-' + rd[0] + '-to-' + rd[1]
+    else:
+        current_date = 'daily-report-' + rd
     if error is True:
         return current_date + '-error.pdf'
     else:
@@ -235,7 +238,7 @@ def gen_error_pdf():
     errorpdf.add_page()
     errorpdf.set_font('Arial','B',48)
     errorpdf.cell(40, 40, 'Error connecting to Qemu. Terminating report generation.', 0, 0, 'C')
-    pdf.output(get_filename(error=True),'F')
+    pdf.output("../Reports/"+get_filename(error=True),'F')
 
 def gen_weekly_report(dates):
     pdf = fpdf.FPDF()
@@ -259,7 +262,7 @@ def gen_weekly_report(dates):
         write_domain_page(pdf,i,d,dates)
 
     # Write the PDF file
-    pdf.output(get_filename(),'F')
+    pdf.output("../Reports/"+get_filename(dates),'F')
 
 def gen_daily_report(rdate):
     pdf = fpdf.FPDF()
@@ -283,7 +286,7 @@ def gen_daily_report(rdate):
         write_domain_page(pdf,i,d,rdate)
 
     # Write the PDF file
-    pdf.output(get_filename(),'F')
+    pdf.output("../Reports/"+get_filename(rdate),'F')
 
 if __name__ == '__main__':
     # Get today
