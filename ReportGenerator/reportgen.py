@@ -51,19 +51,40 @@ def write_host_usage(p,rd):
 
     p.set_font('Arial', '', 14)
 
-    for i in range(24): # for 24 hours of the day
-        hour = format(i, '02d')
-        p.cell(40, STD_HEIGHT, hour + ':00 - ' + hour + ':59', 1, 0, 'C')
+    # Weekly
+    if isinstance(rd, list):
+        startdate = dt.datetime.strptime(rd[0], "%Y-%m-%d")
+        enddate = dt.datetime.strptime(rd[1], "%Y-%m-%d")
+        delta = enddate - startdate
 
-        query = 'SELECT AVG(cpu),AVG(mem),AVG(temp),SUM(power),AVG(netRead + netWrite) FROM hostData WHERE dated is ? AND timed BETWEEN \"'
-        c.execute(query + hour + ':00:00\" AND \"' + hour + ':59:59\"', (rd,))
-        hourdata = c.fetchone()
+        for i in range(delta.days + 1):
+            thisdate = startdate + dt.timedelta(days=i) # Iterate over all days
+            p.cell(40, STD_HEIGHT, thisdate.strftime("%d-%m-%Y"), 1, 0, 'C')
+            print(thisdate.strftime("%Y-%m-%d"))
+            query = 'SELECT AVG(cpu),AVG(mem),AVG(temp),SUM(power),AVG(netRead + netWrite) FROM hostData WHERE dated is ?'
+            c.execute(query, (thisdate.strftime("%Y-%m-%d"),))
+            daydata = c.fetchone()
 
-        p.cell(30, STD_HEIGHT, none2z(hourdata[0]), 1, 0, 'C')
-        p.cell(30, STD_HEIGHT, none2z(hourdata[1]), 1, 0, 'C')
-        p.cell(30, STD_HEIGHT, none2z(hourdata[2]), 1, 0, 'C')
-        p.cell(30, STD_HEIGHT, none2z(hourdata[3]), 1, 0, 'C')
-        p.cell(30, STD_HEIGHT, none2z(hourdata[4]), 1, 1, 'C')
+            p.cell(30, STD_HEIGHT, none2z(daydata[0]), 1, 0, 'C')
+            p.cell(30, STD_HEIGHT, none2z(daydata[1]), 1, 0, 'C')
+            p.cell(30, STD_HEIGHT, none2z(daydata[2]), 1, 0, 'C')
+            p.cell(30, STD_HEIGHT, none2z(daydata[3]), 1, 0, 'C')
+            p.cell(30, STD_HEIGHT, none2z(daydata[4]), 1, 1, 'C')
+    # Daily
+    else:
+        for j in range(24): # for 24 hours of the day
+            hour = format(j, '02d')
+            p.cell(40, STD_HEIGHT, hour + ':00 - ' + hour + ':59', 1, 0, 'C')
+
+            query = 'SELECT AVG(cpu),AVG(mem),AVG(temp),SUM(power),AVG(netRead + netWrite) FROM hostData WHERE dated is ? AND timed BETWEEN \"'
+            c.execute(query + hour + ':00:00\" AND \"' + hour + ':59:59\"', (rd,))
+            hourdata = c.fetchone()
+
+            p.cell(30, STD_HEIGHT, none2z(hourdata[0]), 1, 0, 'C')
+            p.cell(30, STD_HEIGHT, none2z(hourdata[1]), 1, 0, 'C')
+            p.cell(30, STD_HEIGHT, none2z(hourdata[2]), 1, 0, 'C')
+            p.cell(30, STD_HEIGHT, none2z(hourdata[3]), 1, 0, 'C')
+            p.cell(30, STD_HEIGHT, none2z(hourdata[4]), 1, 1, 'C')
 
 
 def write_host_info(p):
@@ -130,18 +151,38 @@ def write_domain_usage(p,i,rd):
 
     vm = 'domDataVM' + str(i+1)
 
-    for j in range(24): # for 24 hours of the day
-        hour = format(j, '02d')
-        p.cell(50, STD_HEIGHT, hour + ':00 - ' + hour + ':59', 1, 0, 'C')
+    # Weekly
+    if isinstance(rd, list):
+        startdate = dt.datetime.strptime(rd[0], "%Y-%m-%d")
+        enddate = dt.datetime.strptime(rd[1], "%Y-%m-%d")
+        delta = enddate - startdate
 
-        query = 'SELECT AVG(cpu),AVG(mem),AVG(netRead),AVG(netWrite) FROM ' + vm + ' WHERE dated is ? AND timed BETWEEN \"'
-        c.execute(query + hour + ':00:00\" AND \"' + hour + ':59:59\"', (rd,))
-        hourdata = c.fetchone()
+        for i in range(delta.days + 1):
+            thisdate = startdate + dt.timedelta(days=i) # Iterate over all days
+            p.cell(50, STD_HEIGHT, thisdate.strftime("%d-%m-%Y"), 1, 0, 'C')
 
-        p.cell(30, STD_HEIGHT, none2z(hourdata[0]), 1, 0, 'C')
-        p.cell(30, STD_HEIGHT, none2z(hourdata[1]), 1, 0, 'C')
-        p.cell(30, STD_HEIGHT, none2z(hourdata[2]), 1, 0, 'C')
-        p.cell(30, STD_HEIGHT, none2z(hourdata[3]), 1, 1, 'C')
+            query = 'SELECT AVG(cpu),AVG(mem),AVG(netRead),AVG(netWrite) FROM ' + vm + ' WHERE dated is ?'
+            c.execute(query, (thisdate.strftime("%Y-%m-%d"),))
+            daydata = c.fetchone()
+
+            p.cell(30, STD_HEIGHT, none2z(daydata[0]), 1, 0, 'C')
+            p.cell(30, STD_HEIGHT, none2z(daydata[1]), 1, 0, 'C')
+            p.cell(30, STD_HEIGHT, none2z(daydata[2]), 1, 0, 'C')
+            p.cell(30, STD_HEIGHT, none2z(daydata[3]), 1, 1, 'C')
+    # Daily
+    else:
+        for j in range(24): # for 24 hours of the day
+            hour = format(j, '02d')
+            p.cell(50, STD_HEIGHT, hour + ':00 - ' + hour + ':59', 1, 0, 'C')
+
+            query = 'SELECT AVG(cpu),AVG(mem),AVG(netRead),AVG(netWrite) FROM ' + vm + ' WHERE dated is ? AND timed BETWEEN \"'
+            c.execute(query + hour + ':00:00\" AND \"' + hour + ':59:59\"', (rd,))
+            hourdata = c.fetchone()
+
+            p.cell(30, STD_HEIGHT, none2z(hourdata[0]), 1, 0, 'C')
+            p.cell(30, STD_HEIGHT, none2z(hourdata[1]), 1, 0, 'C')
+            p.cell(30, STD_HEIGHT, none2z(hourdata[2]), 1, 0, 'C')
+            p.cell(30, STD_HEIGHT, none2z(hourdata[3]), 1, 1, 'C')
 
 
 def write_domain_info(p,domain):
@@ -196,8 +237,29 @@ def gen_error_pdf():
     errorpdf.cell(40, 40, 'Error connecting to Qemu. Terminating report generation.', 0, 0, 'C')
     pdf.output(get_filename(error=True),'F')
 
-def gen_weekly_report(startdate,enddate):
-    print(startdate + ' to ' + enddate)
+def gen_weekly_report(dates):
+    pdf = fpdf.FPDF()
+
+    # Title Page
+    pdf.add_page()
+
+    # Print heading
+    pdf.ln(50)
+    pdf.set_font('Arial','B',40)
+    pdf.cell(0, 30, 'Weekly report', 0, 1, 'C')
+    pdf.set_font('Arial', '', 16)
+    pdf.cell(0, 30, 'Generated at ' + time.strftime("%d-%m-%Y %H:%M:%S"), 0, 1, 'C')
+    pdf.set_font('Arial', '', 20)
+    pdf.cell(0, 30, 'Generated for ' + dates[0] + ' to ' + dates[1])
+
+    write_host_page(pdf,dates)
+
+    domains = conn.listAllDomains(0)
+    for i,d in enumerate(domains):
+        write_domain_page(pdf,i,d,dates)
+
+    # Write the PDF file
+    pdf.output(get_filename(),'F')
 
 def gen_daily_report(rdate):
     pdf = fpdf.FPDF()
@@ -208,9 +270,11 @@ def gen_daily_report(rdate):
     # Print heading
     pdf.ln(50)
     pdf.set_font('Arial','B',40)
-    pdf.cell(0, 30, 'Weekly report', 0, 1, 'C')
-    pdf.set_font('Arial', '', 20)
+    pdf.cell(0, 30, 'Daily report', 0, 1, 'C')
+    pdf.set_font('Arial', '', 16)
     pdf.cell(0, 30, 'Generated at ' + time.strftime("%d-%m-%Y %H:%M:%S"), 0, 1, 'C')
+    pdf.set_font('Arial', '', 20)
+    pdf.cell(0, 30, 'Generated for ' + rdate, 0, 1, 'C')
 
     write_host_page(pdf,rdate)
 
@@ -244,7 +308,7 @@ if __name__ == '__main__':
     c = sqc.cursor()
 
     if argus.weekly:
-        gen_weekly_report(argus.weekly[0],argus.weekly[1])
+        gen_weekly_report(argus.weekly)
     if argus.daily:
         gen_daily_report(argus.daily)
 
