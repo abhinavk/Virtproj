@@ -89,7 +89,7 @@ class ResourceDoubleGraph(MyMplCanvas):
         self.lims = lims
 
         self.axes.invert_xaxis()
-                
+
         timer = QtCore.QTimer(self)
         timer.timeout.connect(self.update_figure)
         timer.start(1000)
@@ -148,9 +148,12 @@ class DisplayGraphs(QtWidgets.QMainWindow, Ui_MainWindow):
     def __init__(self):
         super(DisplayGraphs, self).__init__()  # To call init function in QtWidgets.QMainWindow WITHOUT using a object
         self.setupUi(self) # To call setupUi function in Ui_MainWindow WITHOUT using a object
+        # self.create_menu()
         self.qemu_connect()
         self.draw_graph()
         self.tabWidget.setCurrentIndex(0)
+
+
 
     def qemu_connect(self):
         self.virt_connection = libvirt.open("qemu:///system") # Connect Qemu
@@ -179,16 +182,18 @@ class DisplayGraphs(QtWidgets.QMainWindow, Ui_MainWindow):
     def get_power(self):
         x = sqlite3.connect("./BackgroundSvc/RawData.db")
         xc = x.cursor()
-        xc.execute("SELECT tmp.power from (SELECT (dated || ' ' || timed) as datetimed, power from hostData) as tmp where datetime(tmp.datetimed) < datetime('now','localtime') and datetime(tmp.datetimed) >= datetime('now','-2 hours','localtime') ORDER BY tmp.datetimed DESC LIMIT 60")
+        xc.execute("SELECT tmp.power from (SELECT (dated || ' ' || timed) as datetimed, power from hostData) as tmp where datetime(tmp.datetimed,'localtime') < datetime('now','localtime') and datetime(tmp.datetimed,'localtime') >= datetime('now','-2 hours','localtime') ORDER BY tmp.datetimed DESC LIMIT 60")
         power = xc.fetchall()
         power = [x[0] for x in power]
         print(len(power))
-
+        while len(power) < 60:
+            power.append(0)
         x.close()
         return power
 
     def make_graph_tab(self,funcdata=None,lims=None, timerv=1000):
         self.main_widget = QtWidgets.QWidget(self)
+
         sc = ResourceGraph(funcdata,lims,timerv,self.main_widget)
         vbox = QVBoxLayout()
         vbox.addWidget(sc)
@@ -196,6 +201,7 @@ class DisplayGraphs(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def make_powergraph_tab(self,funcdata=None,lims=None, timerv=1000):
         self.main_widget = QtWidgets.QWidget(self)
+
         sc = PowerResourceGraph(funcdata,lims,timerv,self.main_widget)
         vbox = QVBoxLayout()
         vbox.addWidget(sc)
@@ -203,6 +209,7 @@ class DisplayGraphs(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def make_doublegraph_tab(self,funcdata=None,lims=None):
         self.main_widget = QtWidgets.QWidget(self)
+
         sc = ResourceDoubleGraph(funcdata,lims,self.main_widget)
         vbox = QVBoxLayout()
         label_string = "Red: readKB/s \n Blue: writeKB/s"
@@ -214,6 +221,8 @@ class DisplayGraphs(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def make_pentagraph_tab(self,funcdata=None,lims=None):
         self.main_widget = QtWidgets.QWidget(self)
+
+
         sc = ResourcePentaGraph(funcdata,lims,self.main_widget)
         vbox = QVBoxLayout()
         label_string = "Red: Core1 \n Blue: Core2 \n Green: Core3 \n Yellow: Core4 \n Black: Total CPU"
@@ -225,6 +234,7 @@ class DisplayGraphs(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def make_info_tab(self):
         self.main_widget = QtWidgets.QWidget(self)
+
         vbox = QVBoxLayout()
 
         # Get all cpu info
