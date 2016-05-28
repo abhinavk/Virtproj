@@ -4,6 +4,7 @@ import subprocess
 import libvirt
 import math
 import matplotlib
+import sqlite3
 matplotlib.use("Qt5Agg")
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
@@ -26,10 +27,9 @@ class MyMplCanvas(FigureCanvas):
     def compute_initial_figure(self):
         pass
 
-
-class ResourceGraph(MyMplCanvas):
+class PowerResourceGraph(MyMplCanvas):
     """The widget which will be in each tab of each tabwidget"""
-    def __init__(self, funcdata, lims, *args, **kwargs):
+    def __init__(self, funcdata, lims, timerv = 1000, *args, **kwargs):
         MyMplCanvas.__init__(self, *args, **kwargs)
 
         self.x = [60-i for i in range(60)]
@@ -41,7 +41,31 @@ class ResourceGraph(MyMplCanvas):
 
         timer = QtCore.QTimer(self)
         timer.timeout.connect(self.update_figure)
-        timer.start(1000)
+        timer.start(timerv)
+
+    def update_figure(self):
+        # l = [random.randint(0, 10) for i in range(4)]
+        self.y = self.func()
+        self.axes.plot(self.x,self.y, 'r')
+        self.axes.set_autoscaley_on(False)
+        self.axes.set_ylim(self.lims)
+        self.draw()
+
+class ResourceGraph(MyMplCanvas):
+    """The widget which will be in each tab of each tabwidget"""
+    def __init__(self, funcdata, lims, timerv = 1000, *args, **kwargs):
+        MyMplCanvas.__init__(self, *args, **kwargs)
+
+        self.x = [60-i for i in range(60)]
+        self.y = [0 for i in range(60)]
+        self.func = funcdata
+        self.lims = lims
+
+        self.axes.invert_xaxis()
+
+        timer = QtCore.QTimer(self)
+        timer.timeout.connect(self.update_figure)
+        timer.start(timerv)
 
     def update_figure(self):
         # l = [random.randint(0, 10) for i in range(4)]
@@ -143,16 +167,36 @@ class DisplayGraphs(QtWidgets.QMainWindow, Ui_MainWindow):
         vbox4 = self.make_graph_tab(self.get_memory,[0,8192]) #Memory
         vbox5 = self.make_doublegraph_tab(self.get_disk_load) # Disk
         vbox6 = self.make_graph_tab(self.get_temperature,[20,80]) # Temperature
+        vbox7 = self.make_powergraph_tab(self.get_power, timerv=1000)
         self.tab_info.setLayout(vbox1)
         self.tab_cpu.setLayout(vbox2)
         self.tab_mips.setLayout(vbox3)
         self.tab_mem.setLayout(vbox4)
         self.tab_disk.setLayout(vbox5)
         self.tab_temp.setLayout(vbox6)
+        self.tab_power.setLayout(vbox7)
 
-    def make_graph_tab(self,funcdata=None,lims=None):
+    def get_power(self):
+        x = sqlite3.connect("./BackgroundSvc/RawData.db")
+        xc = x.cursor()
+        xc.execute("SELECT tmp.power from (SELECT (dated || ' ' || timed) as datetimed, power from hostData) as tmp where datetime(tmp.datetimed) < datetime('now','localtime') and datetime(tmp.datetimed) >= datetime('now','-2 hours','localtime') ORDER BY tmp.datetimed DESC LIMIT 60")
+        power = xc.fetchall()
+        power = [x[0] for x in power]
+        print(len(power))
+
+        x.close()
+        return power
+
+    def make_graph_tab(self,funcdata=None,lims=None, timerv=1000):
         self.main_widget = QtWidgets.QWidget(self)
-        sc = ResourceGraph(funcdata,lims,self.main_widget)
+        sc = ResourceGraph(funcdata,lims,timerv,self.main_widget)
+        vbox = QVBoxLayout()
+        vbox.addWidget(sc)
+        return vbox
+
+    def make_powergraph_tab(self,funcdata=None,lims=None, timerv=1000):
+        self.main_widget = QtWidgets.QWidget(self)
+        sc = PowerResourceGraph(funcdata,lims,timerv,self.main_widget)
         vbox = QVBoxLayout()
         vbox.addWidget(sc)
         return vbox

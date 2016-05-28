@@ -57,6 +57,9 @@ class Ui_MainWindow(object):
         self.tab_temp = QtWidgets.QWidget()
         self.tab_temp.setObjectName("tab_temp")
         self.tabWidget.addTab(self.tab_temp, "")
+        self.tab_power = QtWidgets.QWidget()
+        self.tab_power.setObjectName("tab_power")
+        self.tabWidget.addTab(self.tab_power, "")
         self.verticalLayout.addWidget(self.tabWidget)
         self.label_2 = QtWidgets.QLabel(self.scrollAreaWidgetContents)
         self.label_2.setObjectName("label_2")
@@ -101,6 +104,8 @@ class Ui_MainWindow(object):
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_mem), _translate("MainWindow", "Memory"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_disk), _translate("MainWindow", "Disk"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_temp), _translate("MainWindow", "Temp"))
+        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_power), _translate("MainWindow", "Power"))
+
         self.label_2.setText(_translate("MainWindow", ""))
         self.menuFile.setTitle(_translate("MainWindow", "File"))
         self.menuHelp.setTitle(_translate("MainWindow", "Help"))
