@@ -1,8 +1,8 @@
-# Virtproj
+# Incorporating power usage monitoring in Infrastructure-as-a-Service monitor  
 Git repository of VirtProj, our final year project.
 
-## Description
-Monitors all running domain and the host using libvirt library. Also generates a time-based report in PDF.
+# Description
+VirtProj is a dashboard for monitoring and managing running nodes, accessed on desktop. It monitors all running domain and the host using libvirt library. Also generates a time-based report in PDF.
 
 ## Authors
 * Abhinav Kumar (http://abhnv.com) (https://github.com/abhinavk)
