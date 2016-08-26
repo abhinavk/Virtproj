@@ -1,7 +1,7 @@
-# Virtproj
+# bgservice.py
 This python3 script runs as background service and logs all resources usage and vm details at an interval in an optimized manner. 
 
-# Description
+# create_db_tables.py
 Creates empty tables in the sqlite3 database
 
 ## Authors
