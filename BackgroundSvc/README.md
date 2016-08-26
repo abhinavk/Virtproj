@@ -1,0 +1,11 @@
+# Virtproj
+This python3 script runs as background service and logs all resources usage and vm details at an interval in an optimized manner. 
+
+# Description
+Creates empty tables in the sqlite3 database
+
+## Authors
+* Abhinav Kumar (http://abhnv.com) (https://github.com/abhinavk)
+* Sai Dinesh Tumu (https://github.com/dinoRkz)
+
+

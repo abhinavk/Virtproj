@@ -8,4 +8,4 @@ Monitors all running domain and the host using libvirt library. Also generates a
 * Abhinav Kumar (http://abhnv.com) (https://github.com/abhinavk)
 * Sai Dinesh Tumu (https://github.com/dinoRkz)
 
-Although almost all the commits are authored by me, it must be noted we contributed almost equally to the project development. We practice pair programming and Sai doesn't use Git (much) for some reason.
+Although almost all the commits are authored by me, it must be noted we contributed almost equally to the project development. We practice pair programming.
