@@ -6,6 +6,6 @@ Creates empty tables in the sqlite3 database
 
 ## Authors
 * Abhinav Kumar (http://abhnv.com) (https://github.com/abhinavk)
-* Sai Dinesh Tumu (https://github.com/dinoRkz)
+* Sai Dinesh Tumu (https://imdino.xyz) (https://github.com/dinoRkz)
 
 

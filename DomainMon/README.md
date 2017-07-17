@@ -9,7 +9,7 @@ Source code for the Domain Monitor PyQt5 application. It monitors the various pa
 
 # Authors
 * Abhinav Kumar (http://abhnv.com) (https://github.com/abhinavk)
-* Sai Dinesh Tumu (https://github.com/dinoRkz)
+* Sai Dinesh Tumu (https://imdino.xyz) (https://github.com/dinoRkz)
 
 
  

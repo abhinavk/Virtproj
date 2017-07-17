@@ -21,4 +21,4 @@ Generated python class from the UI Form file using pyuic.
 
 # Authors
 * Abhinav Kumar (http://abhnv.com) (https://github.com/abhinavk)
-* Sai Dinesh Tumu (https://github.com/dinoRkz)
+* Sai Dinesh Tumu (https://imdino.xyz) (https://github.com/dinoRkz)

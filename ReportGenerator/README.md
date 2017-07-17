@@ -5,4 +5,4 @@ $ python3 reportgen.py –weekly 2016-05-20 2016-05-2
 
 ## Authors
 * Abhinav Kumar (http://abhnv.com) (https://github.com/abhinavk)
-* Sai Dinesh Tumu (https://github.com/dinoRkz)
+* Sai Dinesh Tumu (https://imdino.xyz) (https://github.com/dinoRkz)
