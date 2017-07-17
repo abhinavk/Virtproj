@@ -9,6 +9,6 @@ With the advent of cloud computing applications, monitoring becomes a valid conc
 
 ## Authors
 * Abhinav Kumar (http://abhnv.com) (https://github.com/abhinavk)
-* Sai Dinesh Tumu (https://github.com/dinoRkz)
+* Sai Dinesh Tumu (https://imdino.xyz) (https://github.com/dinoRkz) 
 
 Although almost all the commits are authored by me, it must be noted that, we contributed almost equally to the project development (by virtue of pair-programming).
